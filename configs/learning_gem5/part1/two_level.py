@@ -64,11 +64,14 @@ default_binary = os.path.join(
 )
 
 # Binary to execute
-SimpleOpts.add_option("binary", nargs="?", default=default_binary)
+SimpleOpts.add_option("--binary", nargs="?", default=default_binary)
+
+# Block size for all cache levels (default 64)
+SimpleOpts.add_option("--cache_line_size", nargs="?", default=64)
 
 # Finalize the arguments and grab the args so we can pass it on to our objects
 args = SimpleOpts.parse_args()
-
+print(args.binary)
 # create the system we are going to simulate
 system = System()
 
@@ -83,6 +86,8 @@ system.mem_ranges = [AddrRange("512MB")]  # Create an address range
 
 # Create a simple CPU
 system.cpu = X86TimingSimpleCPU()
+
+system.cache_line_size = args.cache_line_size
 
 # Create an L1 instruction and data cache
 system.cpu.icache = L1ICache(args)
@@ -124,6 +129,8 @@ system.mem_ctrl.dram = DDR3_1600_8x8()
 system.mem_ctrl.dram.range = system.mem_ranges[0]
 system.mem_ctrl.port = system.membus.mem_side_ports
 
+# binary = 'tests/test-progs/fft/fft'
+print(args.binary)
 system.workload = SEWorkload.init_compatible(args.binary)
 
 # Create a process for a simple "Hello World" application
