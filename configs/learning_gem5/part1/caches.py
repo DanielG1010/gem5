@@ -34,14 +34,42 @@ line options from each individual class.
 
 import m5
 from m5.objects import Cache, WriteAllocator
+from m5.params import Param
+
+from m5.objects.ReplacementPolicies import *
+import m5.objects.ReplacementPolicies
 
 # Add the common scripts to our path
 m5.util.addToPath("../../")
-
+import importlib
 from common import SimpleOpts
 
 # Some specific options for caches
 # For all options see src/mem/cache/BaseCache.py
+
+# Create a dictionary that maps replacement policy names to their classes
+replacement_policies_l1i = {
+    "LRU": LRURP(),
+    "Random": RandomRP(),
+    "FIFO": FIFORP(),
+    # Add more replacement policies here...
+}
+
+# Create a dictionary that maps replacement policy names to their classes
+replacement_policies_l1d = {
+    "LRU": LRURP(),
+    "Random": RandomRP(),
+    "FIFO": FIFORP(),
+    # Add more replacement policies here...
+}
+
+# Create a dictionary that maps replacement policy names to their classes
+replacement_policies_l2 = {
+    "LRU": LRURP(),
+    "Random": RandomRP(),
+    "FIFO": FIFORP(),
+    # Add more replacement policies here...
+}
 
 
 class L1Cache(Cache):
@@ -75,12 +103,16 @@ class L1ICache(L1Cache):
     # Set the default size
     size = "16kB"
     assoc = 2
+    replacement_policy = LRURP()
 
     SimpleOpts.add_option(
         "--l1i_size", help=f"L1 instruction cache size. Default: {size}"
     )
     SimpleOpts.add_option(
         "--l1i_assoc", help=f"L1 instruction cache assoc. Default: {assoc}"
+    )
+    SimpleOpts.add_option(
+        "--l1i_rp", help=f"L1 instruction cache replacement policy. Default: {replacement_policy}"
     )
 
     def __init__(self, opts=None):
@@ -90,6 +122,8 @@ class L1ICache(L1Cache):
                 self.size = opts.l1i_size
             if opts.l1i_assoc:
                 self.assoc = opts.l1i_assoc
+            if opts.l1i_rp:
+                self.replacement_policy = replacement_policies_l1i[opts.l1i_rp]
 
     def connectCPU(self, cpu):
         """Connect this cache's port to a CPU icache port"""
@@ -102,6 +136,7 @@ class L1DCache(L1Cache):
     # Set the default size
     size = "64kB"
     assoc = 2
+    replacement_policy = LRURP()
 
     SimpleOpts.add_option(
         "--l1d_size", help=f"L1 data cache size. Default: {size}"
@@ -109,6 +144,10 @@ class L1DCache(L1Cache):
     SimpleOpts.add_option(
         "--l1d_assoc", help=f"L1 data cache assoc. Default: {assoc}"
     )
+    SimpleOpts.add_option(
+        "--l1d_rp", help=f"L1 data cache replacement policy. Default: {replacement_policy}"
+    )
+
 
     def __init__(self, opts=None):
         super(L1DCache, self).__init__(opts)
@@ -117,6 +156,8 @@ class L1DCache(L1Cache):
                 self.size = opts.l1d_size
             if opts.l1d_assoc:
                 self.assoc = opts.l1d_assoc
+            if opts.l1d_rp:
+                self.replacement_policy = replacement_policies_l1d[opts.l1d_rp]
 
     def connectCPU(self, cpu):
         """Connect this cache's port to a CPU dcache port"""
@@ -134,10 +175,13 @@ class L2Cache(Cache):
     response_latency = 20
     mshrs = 20
     tgts_per_mshr = 12
-
+    replacement_policy = LRURP()
     SimpleOpts.add_option("--l2_size", help=f"L2 cache size. Default: {size}")
     SimpleOpts.add_option(
         "--l2_assoc", help=f"L2 cache assoc. Default: {assoc}"
+    )
+    SimpleOpts.add_option(
+        "--l2_rp", help=f"L2 cache replacement policy. Default: {replacement_policy}"
     )
 
     def __init__(self, opts=None):
@@ -147,6 +191,9 @@ class L2Cache(Cache):
                 self.size = opts.l2_size
             if opts.l2_assoc:
                 self.assoc = opts.l2_assoc
+            if opts.l2_rp:
+                self.replacement_policy = replacement_policies_l2[opts.l2_rp]
+
 
     def connectCPUSideBus(self, bus):
         self.cpu_side = bus.mem_side_ports
